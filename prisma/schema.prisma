@@ -18,6 +18,7 @@ model MealCategory{
   title String
   slug  String @unique 
   image String
+  recipes RecipeCategories[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -32,6 +33,7 @@ model Ingredients {
   imageUrl    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  recipes RecipeIngredients[]
 
   @@map("ingredients")
 }
@@ -43,14 +45,38 @@ model Recipe {
   description  String
   instructions String
   categoryIds  String[]   @db.ObjectId
-  ingredientIds  String[] @db.ObjectId
+  ingredients  RecipeIngredients[] 
+  categories   RecipeCategories[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-
 
   @@map("recipes")
 }
 
+
+// Pivot table for many to many relationship between recipes and categories
+model RecipeCategories{
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  recipeId String @db.ObjectId
+  categoryId String @db.ObjectId
+
+  category MealCategory @relation(fields: [categoryId], references: [id])
+  recipe Recipe @relation(fields: [recipeId], references: [id])
+
+  @@map("recipe_categories")
+}
+
+model RecipeIngredients{
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  recipeId String @db.ObjectId
+  ingredientId String @db.ObjectId
+
+  ingredient Ingredients    @relation(fields: [ingredientId], references: [id])
+  recipe Recipe @relation(fields: [recipeId], references: [id])
+
+  @@index([recipeId, ingredientId])
+  @@map("recipe_ingredients")
+}
 
 
 
