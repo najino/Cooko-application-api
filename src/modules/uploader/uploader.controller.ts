@@ -14,13 +14,21 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { UploaderService } from './uploader.service';
+import {
+  ApiUploadFile,
+  ApiDeleteFile,
+  ApiGetPublicUrl,
+  ApiUploaderTags,
+} from './swagger/uploader.swagger';
 
+@ApiUploaderTags()
 @Controller('upload')
 export class UploaderController {
   private readonly logger = new Logger(UploaderController.name);
 
   constructor(private readonly uploaderService: UploaderService) {}
 
+  @ApiUploadFile()
   @Post()
   @UseInterceptors(
     FileInterceptor('file', {

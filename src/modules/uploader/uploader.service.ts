@@ -7,8 +7,7 @@ import * as path from 'path';
 export class UploaderService {
   private readonly logger = new Logger(UploaderService.name);
   private readonly minioClient: Minio.Client;
-  private readonly bucketName =
-    process.env.MINIO_BUCKET_NAME || 'cooko-uploads';
+  private readonly bucketName = process.env.STORAGE_BUCKET || 'cooko-uploads';
 
   private directoryMap = {
     category: 'categories',
@@ -16,11 +15,10 @@ export class UploaderService {
 
   constructor() {
     this.minioClient = new Minio.Client({
-      endPoint: process.env.MINIO_ENDPOINT || 'localhost',
-      port: parseInt(process.env.MINIO_PORT || '9000'),
-      useSSL: process.env.MINIO_USE_SSL === 'true',
-      accessKey: process.env.MINIO_ACCESS_KEY || 'minioadmin',
-      secretKey: process.env.MINIO_SECRET_KEY || 'minioadmin',
+      endPoint: process.env.STORAGE_ENDPOINT || 'localhost',
+      useSSL: process.env.STORAGE_USE_SSL === 'true',
+      accessKey: process.env.STORAGE_ACCESS_KEY || 'minioadmin',
+      secretKey: process.env.STORAGE_SECRET_KEY || 'minioadmin',
     });
 
     this.initializeBucket();
@@ -60,7 +58,7 @@ export class UploaderService {
       );
 
       // Upload to MinIO
-      const result = await this.minioClient.putObject(
+      await this.minioClient.putObject(
         this.bucketName,
         objectName,
         file.buffer,
@@ -95,11 +93,11 @@ export class UploaderService {
   async getPublicUrl(objectName: string): Promise<string> {
     try {
       // Generate direct public URL for public bucket
-      const protocol = process.env.MINIO_USE_SSL === 'true' ? 'https' : 'http';
-      const port = process.env.MINIO_PORT || '9000';
-      const endpoint = process.env.MINIO_ENDPOINT || 'localhost';
+      const protocol =
+        process.env.STORAGE_USE_SSL === 'true' ? 'https' : 'http';
+      const endpoint = process.env.STORAGE_ENDPOINT || 'localhost';
 
-      const publicUrl = `${protocol}://${endpoint}:${port}/${this.bucketName}/${objectName}`;
+      const publicUrl = `${protocol}://${endpoint}/${this.bucketName}/${objectName}`;
       return publicUrl;
     } catch (error) {
       this.logger.error('❌ Failed to generate public URL:', error);
