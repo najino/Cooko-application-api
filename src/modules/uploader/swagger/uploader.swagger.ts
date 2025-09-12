@@ -251,5 +251,5 @@ export function ApiGetPublicUrl() {
 }
 
 export function ApiUploaderTags() {
-  return applyDecorators(ApiTags('آپلودر - File Uploader'));
+  return applyDecorators(ApiTags('File Uploader'));
 }

@@ -30,7 +30,6 @@ model Ingredients {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   name        String
   imageUrl    String?
-  categoryIds String[] @db.ObjectId
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -47,6 +46,7 @@ model Recipe {
   ingredientIds  String[] @db.ObjectId
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
 
   @@map("recipes")
 }
