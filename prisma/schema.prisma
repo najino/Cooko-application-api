@@ -6,7 +6,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -21,6 +20,9 @@ model MealCategory{
   image String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+
+  @@map("meal_categories")
 }
 
 
@@ -31,6 +33,8 @@ model Ingredients {
   categoryIds String[] @db.ObjectId
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@map("ingredients")
 }
 
 model Recipe {
@@ -43,6 +47,8 @@ model Recipe {
   ingredientIds  String[] @db.ObjectId
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  @@map("recipes")
 }
 
 
