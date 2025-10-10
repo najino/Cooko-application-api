@@ -13,45 +13,45 @@ export const ApiRecipeTags = () => applyDecorators(ApiTags('Recipes'));
 export const ApiCreateRecipe = () =>
   applyDecorators(
     ApiOperation({
-      summary: 'ایجاد دستور پخت جدید',
+      summary: 'Create new recipe',
       description:
-        'یک دستور پخت جدید با عنوان، توضیحات، دستور پخت و مواد اولیه ایجاد می‌کند',
+        'Creates a new recipe with title, description, instructions and ingredients',
     }),
     ApiBody({
-      description: 'اطلاعات دستور پخت جدید',
+      description: 'New recipe information',
       schema: {
         type: 'object',
         properties: {
           title: {
             type: 'string',
-            description: 'عنوان دستور پخت',
-            example: 'قورمه سبزی',
+            description: 'Recipe title',
+            example: 'Ghormeh Sabzi',
           },
           description: {
             type: 'string',
-            description: 'توضیحات دستور پخت',
-            example: 'یک غذای سنتی و خوشمزه ایرانی',
+            description: 'Recipe description',
+            example: 'A traditional and delicious Persian dish',
           },
           instructions: {
             type: 'string',
-            description: 'دستور پخت کامل',
-            example: 'ابتدا گوشت را تفت دهید، سپس سبزیجات را اضافه کنید...',
+            description: 'Complete cooking instructions',
+            example: 'First sauté the meat, then add the vegetables...',
           },
           categoryIds: {
             type: 'array',
             items: { type: 'string' },
-            description: 'آیدی دسته‌بندی‌های غذا',
+            description: 'Meal category IDs',
             example: ['64a1b2c3d4e5f6789012345a', '64a1b2c3d4e5f6789012345b'],
           },
           ingredientIds: {
             type: 'array',
             items: { type: 'string' },
-            description: 'آیدی مواد اولیه مورد نیاز',
+            description: 'Required ingredient IDs',
             example: ['64a1b2c3d4e5f6789012345c', '64a1b2c3d4e5f6789012345d'],
           },
           image: {
             type: 'string',
-            description: 'آدرس تصویر غذا (اختیاری)',
+            description: 'Recipe image URL (optional)',
             example: 'https://example.com/image.jpg',
           },
         },
@@ -60,109 +60,109 @@ export const ApiCreateRecipe = () =>
     }),
     ApiResponse({
       status: 201,
-      description: 'دستور پخت با موفقیت ایجاد شد',
+      description: 'Recipe created successfully',
     }),
     ApiResponse({
       status: 409,
-      description: 'دستور پخت با این عنوان قبلاً وجود دارد',
+      description: 'Recipe with this title already exists',
     }),
     ApiResponse({
       status: 404,
-      description: 'یکی از دسته‌بندی‌ها یا مواد اولیه یافت نشد',
+      description: 'One or more categories or ingredients not found',
     }),
   );
 
 export const ApiGetRecipes = () =>
   applyDecorators(
     ApiOperation({
-      summary: 'دریافت لیست دستور پخت‌ها',
-      description: 'لیست تمام دستور پخت‌ها را با قابلیت صفحه‌بندی برمی‌گرداند',
+      summary: 'Get recipes list',
+      description: 'Returns list of all recipes with pagination support',
     }),
     ApiQuery({
       name: 'page',
       required: false,
-      description: 'شماره صفحه',
+      description: 'Page number',
       example: 1,
     }),
     ApiQuery({
       name: 'limit',
       required: false,
-      description: 'تعداد آیتم در هر صفحه',
+      description: 'Number of items per page',
       example: 10,
     }),
     ApiResponse({
       status: 200,
-      description: 'لیست دستور پخت‌ها با موفقیت دریافت شد',
+      description: 'Recipes list retrieved successfully',
     }),
   );
 
 export const ApiGetRecipe = () =>
   applyDecorators(
     ApiOperation({
-      summary: 'دریافت دستور پخت با آیدی',
-      description: 'جزئیات کامل یک دستور پخت را با آیدی آن برمی‌گرداند',
+      summary: 'Get recipe by ID',
+      description: 'Returns complete details of a recipe by its ID',
     }),
     ApiParam({
       name: 'id',
-      description: 'آیدی دستور پخت',
+      description: 'Recipe ID',
       example: '64a1b2c3d4e5f6789012345a',
     }),
     ApiResponse({
       status: 200,
-      description: 'دستور پخت با موفقیت دریافت شد',
+      description: 'Recipe retrieved successfully',
     }),
     ApiResponse({
       status: 404,
-      description: 'دستور پخت یافت نشد',
+      description: 'Recipe not found',
     }),
   );
 
 export const ApiUpdateRecipe = () =>
   applyDecorators(
     ApiOperation({
-      summary: 'به‌روزرسانی دستور پخت',
-      description: 'اطلاعات یک دستور پخت را به‌روزرسانی می‌کند',
+      summary: 'Update recipe',
+      description: 'Updates recipe information',
     }),
     ApiParam({
       name: 'id',
-      description: 'آیدی دستور پخت',
+      description: 'Recipe ID',
       example: '64a1b2c3d4e5f6789012345a',
     }),
     ApiBody({
-      description: 'اطلاعات جدید دستور پخت',
+      description: 'Updated recipe information',
       schema: {
         type: 'object',
         properties: {
           title: {
             type: 'string',
-            description: 'عنوان دستور پخت',
-            example: 'قورمه سبزی',
+            description: 'Recipe title',
+            example: 'Ghormeh Sabzi',
           },
           description: {
             type: 'string',
-            description: 'توضیحات دستور پخت',
-            example: 'یک غذای سنتی و خوشمزه ایرانی',
+            description: 'Recipe description',
+            example: 'A traditional and delicious Persian dish',
           },
           instructions: {
             type: 'string',
-            description: 'دستور پخت کامل',
-            example: 'ابتدا گوشت را تفت دهید، سپس سبزیجات را اضافه کنید...',
+            description: 'Complete cooking instructions',
+            example: 'First sauté the meat, then add the vegetables...',
           },
           categoryIds: {
             type: 'array',
             items: { type: 'string' },
-            description: 'آیدی دسته‌بندی‌های غذا',
+            description: 'Meal category IDs',
             example: ['64a1b2c3d4e5f6789012345a', '64a1b2c3d4e5f6789012345b'],
           },
           ingredientIds: {
             type: 'array',
             items: { type: 'string' },
-            description: 'آیدی مواد اولیه مورد نیاز',
+            description: 'Required ingredient IDs',
             example: ['64a1b2c3d4e5f6789012345c', '64a1b2c3d4e5f6789012345d'],
           },
           image: {
             type: 'string',
-            description: 'آدرس تصویر غذا (اختیاری)',
+            description: 'Recipe image URL (optional)',
             example: 'https://example.com/image.jpg',
           },
         },
@@ -170,36 +170,35 @@ export const ApiUpdateRecipe = () =>
     }),
     ApiResponse({
       status: 200,
-      description: 'دستور پخت با موفقیت به‌روزرسانی شد',
+      description: 'Recipe updated successfully',
     }),
     ApiResponse({
       status: 404,
-      description: 'دستور پخت یافت نشد',
+      description: 'Recipe not found',
     }),
     ApiResponse({
       status: 409,
-      description: 'دستور پخت با این عنوان قبلاً وجود دارد',
+      description: 'Recipe with this title already exists',
     }),
   );
 
 export const ApiDeleteRecipe = () =>
   applyDecorators(
     ApiOperation({
-      summary: 'حذف دستور پخت',
-      description: 'یک دستور پخت را از سیستم حذف می‌کند',
+      summary: 'Delete recipe',
+      description: 'Deletes a recipe from the system',
     }),
     ApiParam({
       name: 'id',
-      description: 'آیدی دستور پخت',
+      description: 'Recipe ID',
       example: '64a1b2c3d4e5f6789012345a',
     }),
     ApiResponse({
       status: 204,
-      description: 'دستور پخت با موفقیت حذف شد',
+      description: 'Recipe deleted successfully',
     }),
     ApiResponse({
       status: 404,
-      description: 'دستور پخت یافت نشد',
+      description: 'Recipe not found',
     }),
   );
-

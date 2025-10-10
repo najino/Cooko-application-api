@@ -3,37 +3,37 @@ import {
   IsNotEmpty,
   IsOptional,
   IsArray,
-  IsObjectId,
+  IsMongoId as IsObjectId,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateRecipeDto {
   @ApiProperty({
-    description: 'عنوان دستور پخت',
-    example: 'قورمه سبزی',
+    description: 'Recipe title',
+    example: 'Ghormeh Sabzi',
   })
   @IsString()
   @IsNotEmpty()
   title: string;
 
   @ApiPropertyOptional({
-    description: 'توضیحات دستور پخت',
-    example: 'یک غذای سنتی و خوشمزه ایرانی',
+    description: 'Recipe description',
+    example: 'A traditional and delicious Persian dish',
   })
   @IsString()
   @IsOptional()
   description?: string;
 
   @ApiProperty({
-    description: 'دستور پخت کامل',
-    example: 'ابتدا گوشت را تفت دهید، سپس سبزیجات را اضافه کنید...',
+    description: 'Complete cooking instructions',
+    example: 'First sauté the meat, then add the vegetables...',
   })
   @IsString()
   @IsNotEmpty()
   instructions: string;
 
   @ApiProperty({
-    description: 'آیدی دسته‌بندی‌های غذا',
+    description: 'Meal category IDs',
     example: ['64a1b2c3d4e5f6789012345a', '64a1b2c3d4e5f6789012345b'],
     type: [String],
   })
@@ -43,7 +43,7 @@ export class CreateRecipeDto {
   categoryIds: string[];
 
   @ApiProperty({
-    description: 'آیدی مواد اولیه مورد نیاز',
+    description: 'Required ingredient IDs',
     example: ['64a1b2c3d4e5f6789012345c', '64a1b2c3d4e5f6789012345d'],
     type: [String],
   })
@@ -53,11 +53,10 @@ export class CreateRecipeDto {
   ingredientIds: string[];
 
   @ApiPropertyOptional({
-    description: 'آدرس تصویر غذا (اختیاری)',
+    description: 'Recipe image URL (optional)',
     example: 'https://example.com/image.jpg',
   })
   @IsString()
   @IsOptional()
   image?: string;
 }
-

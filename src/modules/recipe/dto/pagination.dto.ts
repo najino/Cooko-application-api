@@ -4,7 +4,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class PaginationDto {
   @ApiPropertyOptional({
-    description: 'شماره صفحه',
+    description: 'Page number',
     example: 1,
     minimum: 1,
     default: 1,
@@ -16,7 +16,7 @@ export class PaginationDto {
   page?: number = 1;
 
   @ApiPropertyOptional({
-    description: 'تعداد آیتم در هر صفحه',
+    description: 'Number of items per page',
     example: 10,
     minimum: 1,
     maximum: 100,
@@ -38,4 +38,3 @@ export class PaginationMetaDto {
   hasPrevPage: boolean;
   hasNextPage: boolean;
 }
-
