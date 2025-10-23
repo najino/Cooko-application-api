@@ -48,7 +48,9 @@ export class RecipeService {
 
       // Validate ingredients exist
       const ingredients = await this.ingredientService.findManyById(
-        createRecipeDto.ingredientIds,
+        createRecipeDto.ingredientIds.map(
+          (ingredient) => ingredient.ingredientId,
+        ),
       );
 
       if (ingredients.length !== createRecipeDto.ingredientIds.length) {
@@ -64,8 +66,9 @@ export class RecipeService {
           image: createRecipeDto.image || '',
           categoryIds: createRecipeDto.categoryIds,
           ingredients: {
-            create: ingredients.map((ingredient) => ({
-              ingredientId: ingredient.id,
+            create: createRecipeDto.ingredientIds.map((ingredient) => ({
+              ingredientId: ingredient.ingredientId,
+              type: ingredient.type,
             })),
           },
           categories: {
@@ -203,7 +206,13 @@ export class RecipeService {
       // Validate ingredients if provided
       if (updateRecipeDto.ingredientIds) {
         const ingredients = await this.prisma.ingredients.findMany({
-          where: { id: { in: updateRecipeDto.ingredientIds } },
+          where: {
+            id: {
+              in: updateRecipeDto.ingredientIds.map(
+                (ingredient) => ingredient.ingredientId,
+              ),
+            },
+          },
         });
 
         if (ingredients.length !== updateRecipeDto.ingredientIds.length) {
