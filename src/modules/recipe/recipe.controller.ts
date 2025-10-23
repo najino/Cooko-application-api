@@ -21,12 +21,25 @@ import {
   ApiGetRecipe,
   ApiUpdateRecipe,
   ApiDeleteRecipe,
+  ApiGetRecipeSuggestions,
 } from './swagger/recipe.swagger';
+import { GetSuggestionQuery } from './dto/get-suggestion.query';
 
 @ApiRecipeTags()
 @Controller('recipes')
 export class RecipeController {
   constructor(private readonly recipeService: RecipeService) {}
+
+  /**
+   *  GET /recipes/suggestions?ingrediests=tomato,potato,....
+   * @param query
+   */
+
+  @Get('suggestions')
+  @ApiGetRecipeSuggestions()
+  getRecipeSuggestions(@Query() query: GetSuggestionQuery) {
+    return this.recipeService.getRecipeSuggestions(query.ingredients);
+  }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)

@@ -3,14 +3,16 @@ import {
   Logger,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
 import { UpdateRecipeDto } from './dto/update-recipe.dto';
 import { PaginationDto, PaginationMetaDto } from './dto/pagination.dto';
-import { Prisma } from '@prisma/client';
+import { Prisma, Recipe } from '@prisma/client';
 import { CategoryService } from '../category/category.service';
 import { IngredientService } from '../ingredient/ingredient.service';
+import { ObjectId, EJSON } from 'bson';
 
 @Injectable()
 export class RecipeService {
@@ -96,9 +98,17 @@ export class RecipeService {
       const [recipes, totalCount] = await Promise.all([
         this.prisma.recipe.findMany({
           skip,
-          take: limit,
+          take: +limit,
           orderBy: {
             createdAt: 'desc',
+          },
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            image: true,
+            createdAt: true,
+            updatedAt: true,
           },
         }),
         this.prisma.recipe.count(),
@@ -146,6 +156,10 @@ export class RecipeService {
 
       const recipe = await this.prisma.recipe.findUnique({
         where: { id },
+        include: {
+          categories: true,
+          ingredients: true,
+        },
       });
 
       if (!recipe) {
@@ -289,6 +303,112 @@ export class RecipeService {
         this.handlePrismaError(error, id);
       }
       this.logger.error('Failed to delete recipe:', error);
+      throw error;
+    }
+  }
+
+  async getRecipeSuggestions(ingredients: string) {
+    try {
+      const splitIngredients = ingredients
+        .split(',')
+        .map((id) => id.trim())
+        .filter((id) => id.length > 0)
+        .map((id) => id);
+
+      if (splitIngredients.length === 0) {
+        throw new BadRequestException('No ingredients provided!');
+      }
+
+      this.logger.log(
+        `Getting recipe suggestions for ingredients: ${splitIngredients.join(', ')}`,
+      );
+
+      // Use raw MongoDB aggregation to replicate the exact behavior of your query
+      const recipes = await this.prisma.recipe.aggregateRaw({
+        pipeline: [
+          {
+            $lookup: {
+              from: 'recipe_ingredients',
+              localField: '_id',
+              foreignField: 'recipeId',
+              as: 'recipeIngredients',
+            },
+          },
+          {
+            $addFields: {
+              mainIngredients: {
+                $filter: {
+                  input: '$recipeIngredients',
+                  as: 'ri',
+                  cond: { $eq: ['$$ri.type', 'MAIN'] },
+                },
+              },
+            },
+          },
+          {
+            $addFields: {
+              mainIngredientsIds: {
+                $map: {
+                  input: '$mainIngredients',
+                  as: 'mi',
+                  in: '$$mi.ingredientId',
+                },
+              },
+            },
+          },
+          {
+            $addFields: {
+              matchCount: {
+                $size: {
+                  $setIntersection: [
+                    '$mainIngredientsIds',
+                    splitIngredients.map((id) => ({ $oid: id })),
+                  ],
+                },
+              },
+            },
+          },
+          {
+            $match: { matchCount: { $gt: 0 } },
+          },
+          {
+            $sort: { matchCount: -1 },
+          },
+          {
+            $lookup: {
+              from: 'ingredients',
+              localField: 'mainIngredientsIds',
+              foreignField: '_id',
+              as: 'mainIngredientsData',
+            },
+          },
+          {
+            $lookup: {
+              from: 'meal_categories',
+              localField: 'categoryIds',
+              foreignField: '_id',
+              as: 'categoriesData',
+            },
+          },
+          {
+            $project: {
+              _id: 1,
+              title: 1,
+              description: 1,
+              image: 1,
+              ingredients: 1,
+              categories: 1,
+              matchCount: 1,
+              mainIngredientsData: 1,
+              categoriesData: 1,
+            },
+          },
+        ],
+      });
+
+      return EJSON.deserialize(recipes);
+    } catch (error) {
+      this.logger.error('Failed to get recipe suggestions:', error);
       throw error;
     }
   }
