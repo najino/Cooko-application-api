@@ -1,12 +1,20 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsArray, IsNotEmpty, IsString } from 'class-validator';
 
 export class GetSuggestionQuery {
   @ApiProperty({
     description: 'Ingredients',
-    example: 'tomato,potato,...',
+    example: '1234567890,1234567891',
   })
   @IsString()
   @IsNotEmpty()
   ingredients: string;
+
+  @ApiProperty({
+    description: 'Categories',
+    example: '1234567890,1234567891',
+  })
+  @IsArray()
+  @IsNotEmpty()
+  categories: string;
 }

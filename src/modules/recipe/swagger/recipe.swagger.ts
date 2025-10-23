@@ -170,15 +170,22 @@ export const ApiDeleteRecipe = () =>
 export const ApiGetRecipeSuggestions = () =>
   applyDecorators(
     ApiOperation({
-      summary: 'Get recipe suggestions based on main ingredients',
+      summary:
+        'Get recipe suggestions based on main ingredients and categories',
       description:
-        'Returns recipes that match the provided main ingredients, sorted by match count',
+        'Returns recipes that match the provided main ingredients and optionally specified categories, sorted by match count',
     }),
     ApiQuery({
       name: 'ingredients',
       required: true,
       description: 'Comma-separated list of ingredient IDs',
       example: '64a1b2c3d4e5f6789012345a,64a1b2c3d4e5f6789012345b',
+    }),
+    ApiQuery({
+      name: 'categories',
+      required: false,
+      description: 'Comma-separated list of category IDs (optional)',
+      example: '64a1b2c3d4e5f6789012345c,64a1b2c3d4e5f6789012345d',
     }),
     ApiResponse({
       status: 200,

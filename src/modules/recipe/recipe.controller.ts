@@ -31,14 +31,17 @@ export class RecipeController {
   constructor(private readonly recipeService: RecipeService) {}
 
   /**
-   *  GET /recipes/suggestions?ingrediests=tomato,potato,....
+   *  GET /recipes/suggestions?ingredients=ingredientId1,ingredientId2&categories=categoryId1,categoryId2
    * @param query
    */
 
   @Get('suggestions')
   @ApiGetRecipeSuggestions()
   getRecipeSuggestions(@Query() query: GetSuggestionQuery) {
-    return this.recipeService.getRecipeSuggestions(query.ingredients);
+    return this.recipeService.getRecipeSuggestions(
+      query.ingredients,
+      query.categories,
+    );
   }
 
   @Post()

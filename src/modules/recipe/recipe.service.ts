@@ -307,7 +307,7 @@ export class RecipeService {
     }
   }
 
-  async getRecipeSuggestions(ingredients: string) {
+  async getRecipeSuggestions(ingredients: string, categories?: string) {
     try {
       const splitIngredients = ingredients
         .split(',')
@@ -315,95 +315,126 @@ export class RecipeService {
         .filter((id) => id.length > 0)
         .map((id) => id);
 
+      const splitCategories = categories
+        ? categories
+            .split(',')
+            .map((id) => id.trim())
+            .filter((id) => id.length > 0)
+            .map((id) => id)
+        : [];
+
       if (splitIngredients.length === 0) {
         throw new BadRequestException('No ingredients provided!');
       }
 
       this.logger.log(
-        `Getting recipe suggestions for ingredients: ${splitIngredients.join(', ')}`,
+        `Getting recipe suggestions for ingredients: ${splitIngredients.join(', ')}${splitCategories.length > 0 ? ` and categories: ${splitCategories.join(', ')}` : ''}`,
       );
 
-      // Use raw MongoDB aggregation to replicate the exact behavior of your query
+      // Build aggregation pipeline dynamically based on whether categories are provided
+      const pipeline: any[] = [
+        {
+          $lookup: {
+            from: 'recipe_ingredients',
+            localField: '_id',
+            foreignField: 'recipeId',
+            as: 'recipeIngredients',
+          },
+        },
+        {
+          $addFields: {
+            mainIngredients: {
+              $filter: {
+                input: '$recipeIngredients',
+                as: 'ri',
+                cond: { $eq: ['$$ri.type', 'MAIN'] },
+              },
+            },
+          },
+        },
+        {
+          $addFields: {
+            mainIngredientsIds: {
+              $map: {
+                input: '$mainIngredients',
+                as: 'mi',
+                in: '$$mi.ingredientId',
+              },
+            },
+          },
+        },
+        {
+          $addFields: {
+            matchCount: {
+              $size: {
+                $setIntersection: [
+                  '$mainIngredientsIds',
+                  splitIngredients.map((id) => ({ $oid: id })),
+                ],
+              },
+            },
+          },
+        },
+      ];
+
+      // Add category filtering only if categories are provided
+      if (splitCategories.length > 0) {
+        pipeline.push({
+          $addFields: {
+            categoryMatchCount: {
+              $size: {
+                $setIntersection: [
+                  '$categoryIds',
+                  splitCategories.map((id) => ({ $oid: id })),
+                ],
+              },
+            },
+          },
+        });
+      }
+
+      // Add match condition
+      const matchCondition: any = { matchCount: { $gt: 0 } };
+      if (splitCategories.length > 0) {
+        matchCondition.categoryMatchCount = { $gt: 0 };
+      }
+
+      pipeline.push(
+        { $match: matchCondition },
+        { $sort: { matchCount: -1 } },
+        {
+          $lookup: {
+            from: 'ingredients',
+            localField: 'mainIngredientsIds',
+            foreignField: '_id',
+            as: 'mainIngredientsData',
+          },
+        },
+        {
+          $lookup: {
+            from: 'meal_categories',
+            localField: 'categoryIds',
+            foreignField: '_id',
+            as: 'categoriesData',
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            title: 1,
+            description: 1,
+            image: 1,
+            ingredients: 1,
+            categories: 1,
+            matchCount: 1,
+            mainIngredientsData: 1,
+            categoriesData: 1,
+          },
+        },
+      );
+
       const recipes = await this.prisma.recipe.aggregateRaw({
-        pipeline: [
-          {
-            $lookup: {
-              from: 'recipe_ingredients',
-              localField: '_id',
-              foreignField: 'recipeId',
-              as: 'recipeIngredients',
-            },
-          },
-          {
-            $addFields: {
-              mainIngredients: {
-                $filter: {
-                  input: '$recipeIngredients',
-                  as: 'ri',
-                  cond: { $eq: ['$$ri.type', 'MAIN'] },
-                },
-              },
-            },
-          },
-          {
-            $addFields: {
-              mainIngredientsIds: {
-                $map: {
-                  input: '$mainIngredients',
-                  as: 'mi',
-                  in: '$$mi.ingredientId',
-                },
-              },
-            },
-          },
-          {
-            $addFields: {
-              matchCount: {
-                $size: {
-                  $setIntersection: [
-                    '$mainIngredientsIds',
-                    splitIngredients.map((id) => ({ $oid: id })),
-                  ],
-                },
-              },
-            },
-          },
-          {
-            $match: { matchCount: { $gt: 0 } },
-          },
-          {
-            $sort: { matchCount: -1 },
-          },
-          {
-            $lookup: {
-              from: 'ingredients',
-              localField: 'mainIngredientsIds',
-              foreignField: '_id',
-              as: 'mainIngredientsData',
-            },
-          },
-          {
-            $lookup: {
-              from: 'meal_categories',
-              localField: 'categoryIds',
-              foreignField: '_id',
-              as: 'categoriesData',
-            },
-          },
-          {
-            $project: {
-              _id: 1,
-              title: 1,
-              description: 1,
-              image: 1,
-              ingredients: 1,
-              categories: 1,
-              matchCount: 1,
-              mainIngredientsData: 1,
-              categoriesData: 1,
-            },
-          },
-        ],
+        pipeline,
       });
 
       return EJSON.deserialize(recipes);
