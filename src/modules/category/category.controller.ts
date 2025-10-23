@@ -22,6 +22,7 @@ import {
   ApiGetCategory,
   ApiUpdateCategory,
   ApiDeleteCategory,
+  ApiGetCategoryIngredients,
 } from './swagger/category.swagger';
 
 @ApiCategoryTags()
@@ -133,6 +134,34 @@ export class CategoryController {
       };
     } catch (error) {
       this.logger.error('Failed to delete category:', error);
+      throw error;
+    }
+  }
+
+  @ApiGetCategoryIngredients()
+  @Get(':id/ingredients')
+  async getCategoryIngredients(
+    @Param('id') id: string,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    try {
+      this.logger.log(
+        `Get category ingredients request: ${id} - Page: ${paginationDto.page}, Limit: ${paginationDto.limit}`,
+      );
+
+      const result = await this.categoryService.getCategoryIngredients(id, {
+        page: paginationDto.page && +paginationDto.page,
+        limit: paginationDto.limit && +paginationDto.limit,
+      });
+
+      return {
+        success: true,
+        message: 'Category ingredients retrieved successfully',
+        data: result.data,
+        pagination: result.pagination,
+      };
+    } catch (error) {
+      this.logger.error('Failed to get category ingredients:', error);
       throw error;
     }
   }

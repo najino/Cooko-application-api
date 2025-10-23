@@ -514,6 +514,137 @@ export function ApiDeleteCategory() {
   );
 }
 
+export function ApiGetCategoryIngredients() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Get Category Ingredients',
+      description:
+        'Get all ingredients for a specific category with pagination',
+    }),
+    ApiParam({
+      name: 'id',
+      description: 'Category ID',
+      example: '507f1f77bcf86cd799439011',
+    }),
+    ApiQuery({
+      name: 'page',
+      required: false,
+      type: 'number',
+      example: 1,
+      description: 'Page number (starts from 1)',
+    }),
+    ApiQuery({
+      name: 'limit',
+      required: false,
+      type: 'number',
+      example: 10,
+      description: 'Number of items per page',
+    }),
+    ApiResponse({
+      status: 200,
+      description: 'Category ingredients retrieved successfully',
+      schema: {
+        type: 'object',
+        properties: {
+          success: {
+            type: 'boolean',
+            example: true,
+          },
+          message: {
+            type: 'string',
+            example: 'Category ingredients retrieved successfully',
+          },
+          data: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                id: {
+                  type: 'string',
+                  example: '507f1f77bcf86cd799439011',
+                },
+                name: {
+                  type: 'string',
+                  example: 'Tomato',
+                },
+                categoryId: {
+                  type: 'string',
+                  example: '507f1f77bcf86cd799439012',
+                },
+                image: {
+                  type: 'string',
+                  example:
+                    'http://localhost:9000/cooko-uploads/ingredients/tomato.jpg',
+                },
+                createdAt: {
+                  type: 'string',
+                  format: 'date-time',
+                  example: '2024-01-01T00:00:00.000Z',
+                },
+                updatedAt: {
+                  type: 'string',
+                  format: 'date-time',
+                  example: '2024-01-01T00:00:00.000Z',
+                },
+              },
+            },
+          },
+          pagination: {
+            type: 'object',
+            properties: {
+              totalCount: {
+                type: 'number',
+                example: 25,
+              },
+              returnCount: {
+                type: 'number',
+                example: 10,
+              },
+              page: {
+                type: 'number',
+                example: 1,
+              },
+              limit: {
+                type: 'number',
+                example: 10,
+              },
+              hasPrevPage: {
+                type: 'boolean',
+                example: false,
+              },
+              hasNextPage: {
+                type: 'boolean',
+                example: true,
+              },
+            },
+          },
+        },
+      },
+    }),
+    ApiResponse({
+      status: 404,
+      description: 'Category not found',
+      schema: {
+        type: 'object',
+        properties: {
+          statusCode: {
+            type: 'number',
+            example: 404,
+          },
+          message: {
+            type: 'string',
+            example: "Category with ID '507f1f77bcf86cd799439011' not found",
+          },
+          error: {
+            type: 'string',
+            example: 'Not Found',
+          },
+        },
+      },
+    }),
+  );
+}
+
 export function ApiCategoryTags() {
   return applyDecorators(ApiTags('Categories - Meal Categories'));
 }
