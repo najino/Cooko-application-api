@@ -195,4 +195,56 @@ export class CategoryService {
       throw error;
     }
   }
+
+  async getCategoryIngredients(
+    categoryId: string,
+    { page = 1, limit = 10 }: { page?: number; limit?: number },
+  ) {
+    try {
+      const skip = (page - 1) * limit;
+
+      this.logger.log(
+        `Getting category ingredients: ${categoryId} - Page: ${page}, Limit: ${limit}`,
+      );
+
+      const [ingredients, totalCount] = await Promise.all([
+        this.prisma.ingredients.findMany({
+          where: { categoryId },
+          skip,
+          take: limit,
+          orderBy: {
+            createdAt: 'desc',
+          },
+        }),
+        this.prisma.ingredients.count({
+          where: { categoryId },
+        }),
+      ]);
+
+      const returnCount = ingredients.length;
+      const hasPrevPage = page > 1;
+      const hasNextPage = skip + limit < totalCount;
+
+      const paginationMeta: PaginationMetaDto = {
+        totalCount,
+        returnCount,
+        page,
+        limit,
+        hasPrevPage,
+        hasNextPage,
+      };
+
+      this.logger.log(
+        `Category ingredients fetched successfully: ${categoryId} - Total: ${totalCount}, Returned: ${returnCount}`,
+      );
+
+      return {
+        data: ingredients,
+        pagination: paginationMeta,
+      };
+    } catch (error) {
+      this.logger.error('Failed to get category ingredients:', error);
+      throw error;
+    }
+  }
 }
