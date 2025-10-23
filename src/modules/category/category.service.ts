@@ -247,4 +247,8 @@ export class CategoryService {
       throw error;
     }
   }
+
+  findManyById(ids: string[]) {
+    return this.prisma.mealCategory.findMany({ where: { id: { in: ids } } });
+  }
 }

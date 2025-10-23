@@ -69,10 +69,15 @@ model RecipeCategories{
   @@map("recipe_categories")
 }
 
+enum RecipeIngredientType {
+  MAIN
+  ADDITIONAL
+}
 model RecipeIngredients{
   id String @id @default(auto()) @map("_id") @db.ObjectId
   recipeId String @db.ObjectId
   ingredientId String @db.ObjectId
+  type RecipeIngredientType
 
   ingredient Ingredients    @relation(fields: [ingredientId], references: [id])
   recipe Recipe @relation(fields: [recipeId], references: [id])

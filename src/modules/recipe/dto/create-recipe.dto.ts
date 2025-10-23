@@ -4,8 +4,34 @@ import {
   IsOptional,
   IsArray,
   IsMongoId as IsObjectId,
+  IsMongoId,
+  IsEnum,
+  ValidateNested,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { RecipeIngredientType } from '@prisma/client';
+import { Type } from 'class-transformer';
+
+export class CreateRecipeIngredientDto {
+  @ApiProperty({
+    description: 'Ingredient ID',
+    example: '64a1b2c3d4e5f6789012345a',
+  })
+  @IsString()
+  @IsMongoId()
+  @IsNotEmpty()
+  ingredientId: string;
+
+  @ApiProperty({
+    description: 'Ingredient type',
+    example: 'MAIN',
+  })
+  @IsEnum(RecipeIngredientType, {
+    message: 'Invalid ingredient type, must be MAIN or ADDITIONAL',
+  })
+  @IsNotEmpty()
+  type: RecipeIngredientType;
+}
 
 export class CreateRecipeDto {
   @ApiProperty({
@@ -44,13 +70,22 @@ export class CreateRecipeDto {
 
   @ApiProperty({
     description: 'Required ingredient IDs',
-    example: ['64a1b2c3d4e5f6789012345c', '64a1b2c3d4e5f6789012345d'],
-    type: [String],
+    example: [
+      {
+        ingredientId: '64a1b2c3d4e5f6789012345a',
+        type: RecipeIngredientType.MAIN,
+      },
+      {
+        ingredientId: '64a1b2c3d4e5f6789012345b',
+        type: RecipeIngredientType.ADDITIONAL,
+      },
+    ],
+    type: [CreateRecipeIngredientDto],
   })
   @IsArray()
-  @IsString({ each: true })
-  @IsObjectId({ each: true })
-  ingredientIds: string[];
+  @ValidateNested({ each: true })
+  @Type(() => CreateRecipeIngredientDto)
+  ingredientIds: CreateRecipeIngredientDto[];
 
   @ApiPropertyOptional({
     description: 'Recipe image URL (optional)',

@@ -3,18 +3,26 @@ import {
   Logger,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
 import { UpdateRecipeDto } from './dto/update-recipe.dto';
 import { PaginationDto, PaginationMetaDto } from './dto/pagination.dto';
-import { Prisma } from '@prisma/client';
+import { Prisma, Recipe } from '@prisma/client';
+import { CategoryService } from '../category/category.service';
+import { IngredientService } from '../ingredient/ingredient.service';
+import { ObjectId, EJSON } from 'bson';
 
 @Injectable()
 export class RecipeService {
   private readonly logger = new Logger(RecipeService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly categroyService: CategoryService,
+    private readonly ingredientService: IngredientService,
+  ) {}
 
   async create(createRecipeDto: CreateRecipeDto) {
     try {
@@ -32,18 +40,20 @@ export class RecipeService {
       }
 
       // Validate categories exist
-      const categories = await this.prisma.mealCategory.findMany({
-        where: { id: { in: createRecipeDto.categoryIds } },
-      });
+      const categories = await this.categroyService.findManyById(
+        createRecipeDto.categoryIds,
+      );
 
       if (categories.length !== createRecipeDto.categoryIds.length) {
         throw new NotFoundException('One or more categories not found');
       }
 
       // Validate ingredients exist
-      const ingredients = await this.prisma.ingredients.findMany({
-        where: { id: { in: createRecipeDto.ingredientIds } },
-      });
+      const ingredients = await this.ingredientService.findManyById(
+        createRecipeDto.ingredientIds.map(
+          (ingredient) => ingredient.ingredientId,
+        ),
+      );
 
       if (ingredients.length !== createRecipeDto.ingredientIds.length) {
         throw new NotFoundException('One or more ingredients not found');
@@ -57,6 +67,17 @@ export class RecipeService {
           instructions: createRecipeDto.instructions,
           image: createRecipeDto.image || '',
           categoryIds: createRecipeDto.categoryIds,
+          ingredients: {
+            create: createRecipeDto.ingredientIds.map((ingredient) => ({
+              ingredientId: ingredient.ingredientId,
+              type: ingredient.type,
+            })),
+          },
+          categories: {
+            create: categories.map((category) => ({
+              categoryId: category.id,
+            })),
+          },
         },
       });
 
@@ -77,9 +98,17 @@ export class RecipeService {
       const [recipes, totalCount] = await Promise.all([
         this.prisma.recipe.findMany({
           skip,
-          take: limit,
+          take: +limit,
           orderBy: {
             createdAt: 'desc',
+          },
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            image: true,
+            createdAt: true,
+            updatedAt: true,
           },
         }),
         this.prisma.recipe.count(),
@@ -127,6 +156,10 @@ export class RecipeService {
 
       const recipe = await this.prisma.recipe.findUnique({
         where: { id },
+        include: {
+          categories: true,
+          ingredients: true,
+        },
       });
 
       if (!recipe) {
@@ -187,7 +220,13 @@ export class RecipeService {
       // Validate ingredients if provided
       if (updateRecipeDto.ingredientIds) {
         const ingredients = await this.prisma.ingredients.findMany({
-          where: { id: { in: updateRecipeDto.ingredientIds } },
+          where: {
+            id: {
+              in: updateRecipeDto.ingredientIds.map(
+                (ingredient) => ingredient.ingredientId,
+              ),
+            },
+          },
         });
 
         if (ingredients.length !== updateRecipeDto.ingredientIds.length) {
@@ -264,6 +303,143 @@ export class RecipeService {
         this.handlePrismaError(error, id);
       }
       this.logger.error('Failed to delete recipe:', error);
+      throw error;
+    }
+  }
+
+  async getRecipeSuggestions(ingredients: string, categories?: string) {
+    try {
+      const splitIngredients = ingredients
+        .split(',')
+        .map((id) => id.trim())
+        .filter((id) => id.length > 0)
+        .map((id) => id);
+
+      const splitCategories = categories
+        ? categories
+            .split(',')
+            .map((id) => id.trim())
+            .filter((id) => id.length > 0)
+            .map((id) => id)
+        : [];
+
+      if (splitIngredients.length === 0) {
+        throw new BadRequestException('No ingredients provided!');
+      }
+
+      this.logger.log(
+        `Getting recipe suggestions for ingredients: ${splitIngredients.join(', ')}${splitCategories.length > 0 ? ` and categories: ${splitCategories.join(', ')}` : ''}`,
+      );
+
+      // Build aggregation pipeline dynamically based on whether categories are provided
+      const pipeline: any[] = [
+        {
+          $lookup: {
+            from: 'recipe_ingredients',
+            localField: '_id',
+            foreignField: 'recipeId',
+            as: 'recipeIngredients',
+          },
+        },
+        {
+          $addFields: {
+            mainIngredients: {
+              $filter: {
+                input: '$recipeIngredients',
+                as: 'ri',
+                cond: { $eq: ['$$ri.type', 'MAIN'] },
+              },
+            },
+          },
+        },
+        {
+          $addFields: {
+            mainIngredientsIds: {
+              $map: {
+                input: '$mainIngredients',
+                as: 'mi',
+                in: '$$mi.ingredientId',
+              },
+            },
+          },
+        },
+        {
+          $addFields: {
+            matchCount: {
+              $size: {
+                $setIntersection: [
+                  '$mainIngredientsIds',
+                  splitIngredients.map((id) => ({ $oid: id })),
+                ],
+              },
+            },
+          },
+        },
+      ];
+
+      // Add category filtering only if categories are provided
+      if (splitCategories.length > 0) {
+        pipeline.push({
+          $addFields: {
+            categoryMatchCount: {
+              $size: {
+                $setIntersection: [
+                  '$categoryIds',
+                  splitCategories.map((id) => ({ $oid: id })),
+                ],
+              },
+            },
+          },
+        });
+      }
+
+      // Add match condition
+      const matchCondition: any = { matchCount: { $gt: 0 } };
+      if (splitCategories.length > 0) {
+        matchCondition.categoryMatchCount = { $gt: 0 };
+      }
+
+      pipeline.push(
+        { $match: matchCondition },
+        { $sort: { matchCount: -1 } },
+        {
+          $lookup: {
+            from: 'ingredients',
+            localField: 'mainIngredientsIds',
+            foreignField: '_id',
+            as: 'mainIngredientsData',
+          },
+        },
+        {
+          $lookup: {
+            from: 'meal_categories',
+            localField: 'categoryIds',
+            foreignField: '_id',
+            as: 'categoriesData',
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            title: 1,
+            description: 1,
+            image: 1,
+            ingredients: 1,
+            categories: 1,
+            matchCount: 1,
+            mainIngredientsData: 1,
+            categoriesData: 1,
+          },
+        },
+      );
+
+      const recipes = await this.prisma.recipe.aggregateRaw({
+        pipeline,
+      });
+
+      return EJSON.deserialize(recipes);
+    } catch (error) {
+      this.logger.error('Failed to get recipe suggestions:', error);
       throw error;
     }
   }
