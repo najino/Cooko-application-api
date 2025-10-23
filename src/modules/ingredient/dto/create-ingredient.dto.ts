@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsMongoId } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateIngredientDto {
@@ -18,4 +18,13 @@ export class CreateIngredientDto {
   @IsString()
   @IsOptional()
   imageUrl?: string;
+
+  @ApiProperty({
+    description: 'Category ID',
+    example: '64a1b2c3d4e5f6789012345a',
+  })
+  @IsString()
+  @IsMongoId()
+  @IsNotEmpty()
+  categoryId: string;
 }

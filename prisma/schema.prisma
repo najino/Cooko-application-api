@@ -21,7 +21,7 @@ model MealCategory{
   recipes RecipeCategories[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
+  ingredients Ingredients[]
 
   @@map("meal_categories")
 }
@@ -33,8 +33,10 @@ model Ingredients {
   imageUrl    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  categoryId String @db.ObjectId
   recipes RecipeIngredients[]
 
+  category MealCategory @relation(fields: [categoryId], references: [id])
   @@map("ingredients")
 }
 
