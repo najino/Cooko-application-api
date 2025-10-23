@@ -34,6 +34,7 @@ export class IngredientService {
       const ingredient = await this.prisma.ingredients.create({
         data: {
           name: createIngredientDto.name,
+          slug: createIngredientDto.slug,
           categoryId: createIngredientDto.categoryId,
           imageUrl: createIngredientDto.imageUrl ?? '',
         },

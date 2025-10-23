@@ -27,4 +27,12 @@ export class CreateIngredientDto {
   @IsMongoId()
   @IsNotEmpty()
   categoryId: string;
+
+  @ApiProperty({
+    description: 'Ingredient slug',
+    example: 'tomato',
+  })
+  @IsString()
+  @IsNotEmpty()
+  slug: string;
 }
