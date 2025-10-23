@@ -7,6 +7,7 @@ import {
   ApiBody,
   ApiTags,
 } from '@nestjs/swagger';
+import { CreateRecipeDto } from '../dto/create-recipe.dto';
 
 export const ApiRecipeTags = () => applyDecorators(ApiTags('Recipes'));
 
@@ -19,44 +20,7 @@ export const ApiCreateRecipe = () =>
     }),
     ApiBody({
       description: 'New recipe information',
-      schema: {
-        type: 'object',
-        properties: {
-          title: {
-            type: 'string',
-            description: 'Recipe title',
-            example: 'Ghormeh Sabzi',
-          },
-          description: {
-            type: 'string',
-            description: 'Recipe description',
-            example: 'A traditional and delicious Persian dish',
-          },
-          instructions: {
-            type: 'string',
-            description: 'Complete cooking instructions',
-            example: 'First sauté the meat, then add the vegetables...',
-          },
-          categoryIds: {
-            type: 'array',
-            items: { type: 'string' },
-            description: 'Meal category IDs',
-            example: ['64a1b2c3d4e5f6789012345a', '64a1b2c3d4e5f6789012345b'],
-          },
-          ingredientIds: {
-            type: 'array',
-            items: { type: 'string' },
-            description: 'Required ingredient IDs',
-            example: ['64a1b2c3d4e5f6789012345c', '64a1b2c3d4e5f6789012345d'],
-          },
-          image: {
-            type: 'string',
-            description: 'Recipe image URL (optional)',
-            example: 'https://example.com/image.jpg',
-          },
-        },
-        required: ['title', 'instructions', 'categoryIds', 'ingredientIds'],
-      },
+      type: CreateRecipeDto,
     }),
     ApiResponse({
       status: 201,
@@ -200,5 +164,99 @@ export const ApiDeleteRecipe = () =>
     ApiResponse({
       status: 404,
       description: 'Recipe not found',
+    }),
+  );
+
+export const ApiGetRecipeSuggestions = () =>
+  applyDecorators(
+    ApiOperation({
+      summary:
+        'Get recipe suggestions based on main ingredients and categories',
+      description:
+        'Returns recipes that match the provided main ingredients and optionally specified categories, sorted by match count',
+    }),
+    ApiQuery({
+      name: 'ingredients',
+      required: true,
+      description: 'Comma-separated list of ingredient IDs',
+      example: '64a1b2c3d4e5f6789012345a,64a1b2c3d4e5f6789012345b',
+    }),
+    ApiQuery({
+      name: 'categories',
+      required: false,
+      description: 'Comma-separated list of category IDs (optional)',
+      example: '64a1b2c3d4e5f6789012345c,64a1b2c3d4e5f6789012345d',
+    }),
+    ApiResponse({
+      status: 200,
+      description: 'Recipe suggestions retrieved successfully',
+      schema: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            _id: {
+              type: 'string',
+              description: 'Recipe ID',
+              example: '64a1b2c3d4e5f6789012345a',
+            },
+            title: {
+              type: 'string',
+              description: 'Recipe title',
+              example: 'Ghormeh Sabzi',
+            },
+            description: {
+              type: 'string',
+              description: 'Recipe description',
+              example: 'A traditional Persian dish',
+            },
+            instructions: {
+              type: 'string',
+              description: 'Cooking instructions',
+              example: 'First sauté the meat...',
+            },
+            image: {
+              type: 'string',
+              description: 'Recipe image URL',
+              example: 'https://example.com/image.jpg',
+            },
+            matchCount: {
+              type: 'number',
+              description: 'Number of matching main ingredients',
+              example: 3,
+            },
+            mainIngredientsData: {
+              type: 'array',
+              description: 'Main ingredients data',
+              items: {
+                type: 'object',
+                properties: {
+                  _id: { type: 'string' },
+                  name: { type: 'string' },
+                  slug: { type: 'string' },
+                  imageUrl: { type: 'string' },
+                },
+              },
+            },
+            categoriesData: {
+              type: 'array',
+              description: 'Recipe categories data',
+              items: {
+                type: 'object',
+                properties: {
+                  _id: { type: 'string' },
+                  title: { type: 'string' },
+                  slug: { type: 'string' },
+                  image: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+      },
+    }),
+    ApiResponse({
+      status: 400,
+      description: 'No ingredients provided',
     }),
   );
