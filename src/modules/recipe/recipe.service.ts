@@ -9,12 +9,18 @@ import { CreateRecipeDto } from './dto/create-recipe.dto';
 import { UpdateRecipeDto } from './dto/update-recipe.dto';
 import { PaginationDto, PaginationMetaDto } from './dto/pagination.dto';
 import { Prisma } from '@prisma/client';
+import { CategoryService } from '../category/category.service';
+import { IngredientService } from '../ingredient/ingredient.service';
 
 @Injectable()
 export class RecipeService {
   private readonly logger = new Logger(RecipeService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly categroyService: CategoryService,
+    private readonly ingredientService: IngredientService,
+  ) {}
 
   async create(createRecipeDto: CreateRecipeDto) {
     try {
@@ -32,18 +38,18 @@ export class RecipeService {
       }
 
       // Validate categories exist
-      const categories = await this.prisma.mealCategory.findMany({
-        where: { id: { in: createRecipeDto.categoryIds } },
-      });
+      const categories = await this.categroyService.findManyById(
+        createRecipeDto.categoryIds,
+      );
 
       if (categories.length !== createRecipeDto.categoryIds.length) {
         throw new NotFoundException('One or more categories not found');
       }
 
       // Validate ingredients exist
-      const ingredients = await this.prisma.ingredients.findMany({
-        where: { id: { in: createRecipeDto.ingredientIds } },
-      });
+      const ingredients = await this.ingredientService.findManyById(
+        createRecipeDto.ingredientIds,
+      );
 
       if (ingredients.length !== createRecipeDto.ingredientIds.length) {
         throw new NotFoundException('One or more ingredients not found');
@@ -57,6 +63,16 @@ export class RecipeService {
           instructions: createRecipeDto.instructions,
           image: createRecipeDto.image || '',
           categoryIds: createRecipeDto.categoryIds,
+          ingredients: {
+            create: ingredients.map((ingredient) => ({
+              ingredientId: ingredient.id,
+            })),
+          },
+          categories: {
+            create: categories.map((category) => ({
+              categoryId: category.id,
+            })),
+          },
         },
       });
 

@@ -196,4 +196,8 @@ export class IngredientService {
       throw error;
     }
   }
+
+  findManyById(ids: string[]) {
+    return this.prisma.ingredients.findMany({ where: { id: { in: ids } } });
+  }
 }
